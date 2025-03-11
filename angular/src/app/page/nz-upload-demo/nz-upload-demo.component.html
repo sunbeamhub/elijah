@@ -1,0 +1,19 @@
+<form (ngSubmit)="submitForm()" [formGroup]="form" nz-form>
+    <nz-form-item>
+        <nz-form-label nzRequired nzFor="file">附件</nz-form-label>
+        <nz-form-control nzErrorTip="请上传附件">
+            <nz-upload appNzUpload formControlName="file" nzAction="/api/upload">
+                <button nz-button>
+                    上传文件
+                </button>
+            </nz-upload>
+        </nz-form-control>
+    </nz-form-item>
+    <nz-form-item>
+        <nz-form-label [nzNoColon]="true"></nz-form-label>
+        <nz-form-control>
+            <button nz-button type="reset">取消</button>
+            <button nz-button nzType="primary" type="submit">提交</button>
+        </nz-form-control>
+    </nz-form-item>
+</form>

@@ -1,0 +1,7 @@
+@if (list.length > 0) {
+<div appAutoUnidirectionalScroll class="list" scrollDirection="y">
+  @for (item of list; track item) {
+  <div class="list__item">{{ item }}</div>
+  }
+</div>
+}

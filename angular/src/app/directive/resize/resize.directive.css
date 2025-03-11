@@ -1,0 +1,96 @@
+
+.resize__bottom {
+    bottom: -5px;
+    left: 5px;
+    position: absolute;
+    right: 5px;
+
+    height: 10px;
+
+    cursor: row-resize;
+    pointer-events: all;
+}
+
+.resize__bottom-left {
+    bottom: -5px;
+    left: -5px;
+    position: absolute;
+
+    height: 10px;
+    width: 10px;
+
+    cursor: nesw-resize;
+    pointer-events: all;
+}
+
+.resize__bottom-right {
+    bottom: -5px;
+    position: absolute;
+    right: -5px;
+
+    height: 10px;
+    width: 10px;
+
+    cursor: nwse-resize;
+    pointer-events: all;
+}
+
+.resize__left {
+    bottom: 5px;
+    left: -5px;
+    position: absolute;
+    top: 5px;
+
+    width: 10px;
+
+    cursor: col-resize;
+    pointer-events: all;
+}
+
+.resize__right {
+    bottom: 5px;
+    position: absolute;
+    right: -5px;
+    top: 5px;
+
+    width: 10px;
+
+    cursor: col-resize;
+    pointer-events: all;
+}
+
+.resize__top {
+    left: 5px;
+    position: absolute;
+    right: 5px;
+    top: -5px;
+
+    height: 10px;
+
+    cursor: row-resize;
+    pointer-events: all;
+}
+
+.resize__top-left {
+    left: -5px;
+    position: absolute;
+    top: -5px;
+
+    height: 10px;
+    width: 10px;
+
+    cursor: nwse-resize;
+    pointer-events: all;
+}
+
+.resize__top-right {
+    position: absolute;
+    right: -5px;
+    top: -5px;
+
+    height: 10px;
+    width: 10px;
+
+    cursor: nesw-resize;
+    pointer-events: all;
+}

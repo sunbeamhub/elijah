@@ -1,0 +1,73 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKERFILE = "Dockerfile"
+        DOCKER_REGISTRY = "localhost:5000"
+        IMAGE_NAME = "elijah-angular"
+        IMAGE_TAG = "latest"
+        PORT = "4000"
+    }
+
+    stages {
+        stage('Setup Environment') {
+            steps {
+                dir('.') {
+                    script {
+                        sh 'which jq || sudo apt-get update && sudo apt-get install -y jq'
+                        version = sh(
+                            script: "cat package.json | jq -r '.version'",
+                            returnStdout: true
+                        ).trim()
+                        echo "Extracted version: ${version}"
+                        env.IMAGE_TAG = version
+                    }
+                }
+            }
+        }
+        stage('Build and Push Docker Image') {
+            steps {
+                dir('.') {
+                    script {
+                        try {
+                            sh 'chmod +x docker-build.sh'
+                            sh './docker-build.sh'
+                        } catch (Exception e) {
+                            echo "Error during build and push: ${e.getMessage()}"
+                            currentBuild.result = 'FAILURE'
+                            throw e
+                        }
+                    }
+                }
+            }
+        }
+        stage('Pull and Deploy Docker Image') {
+            steps {
+                dir('.') {
+                    script {
+                        try {
+                            sh 'chmod +x docker-run.sh'
+                            sh './docker-run.sh'
+                        } catch (Exception e) {
+                            echo "Error during pull and Deploy: ${e.getMessage()}"
+                            currentBuild.result = 'FAILURE'
+                            throw e
+                        }           
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'This will always run after the pipeline completes'
+        }
+        success {
+            echo 'This will run only if the pipeline succeeds'
+        }
+        failure {
+            echo 'This will run only if the pipeline fails'
+        }
+    }
+}

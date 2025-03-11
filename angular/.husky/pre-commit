@@ -1,0 +1,3 @@
+cd angular
+npm test
+npm run format

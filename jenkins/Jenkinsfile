@@ -1,0 +1,30 @@
+pipeline {
+    agent any
+
+    environment {}
+
+    stages {
+        stage('Angular and NestJS') {
+            parallel {
+                stage('Angular') {
+                    steps {
+                        dir('../angular') {
+                            script {
+                                load 'Jenkinsfile'
+                            }
+                        }
+                    }
+                }
+                stage('NestJS') {
+                    steps {
+                        dir('../nestjs') {
+                            script {
+                                load 'Jenkinsfile'
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

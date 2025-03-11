@@ -1,0 +1,3 @@
+cd nestjs
+npm run test:e2e
+npm run format

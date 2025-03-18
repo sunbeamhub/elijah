@@ -29,7 +29,6 @@ To get more help on the Angular CLI use `ng help` or go check out the [Angular C
 ## Docker 部署
 
 - 安装 Docker
-- 安装 jq
 - 创建本地私有 Docker 镜像仓库 `docker pull registry:2 && docker run -d -p 5000:5000 --name registry registry:2`
 - 创建 Docker 镜像并启动 Docker 容器 `chmod +x docker-build.sh docker-run.sh && ./docker-build.sh && ./docker-run.sh`
 

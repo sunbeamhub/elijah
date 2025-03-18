@@ -13,26 +13,33 @@ RUN npm ci
 COPY . .
 
 # 运行构建命令进行编译
-RUN npm run build
+RUN npm run build:versioned
+
+# 运行打包命令
+RUN tar -zcvf ./dist.tgz ./dist
 
 # 第二阶段：生产阶段
 FROM node:18-alpine
 
 # 定义生产阶段的环境变量
+ARG IMAGE_TAG
 ARG PORT=4000
+ENV IMAGE_TAG=${IMAGE_TAG}
 ENV PORT=${PORT}
 
 # 设置工作目录
 WORKDIR /usr/elijah/angular
 
 # 复制构建产物
-COPY --from=builder /usr/elijah/angular/dist ./dist
+COPY --from=builder /usr/elijah/angular/dist.tgz .
+RUN tar -zxf dist.tgz -C . && \
+    rm dist.tgz
 
 # 暴露应用程序运行的端口
 EXPOSE ${PORT}
 
 # 拷贝启动脚本
-COPY docker-setup.sh /usr/local/bin
+COPY --from=builder /usr/elijah/angular/docker-setup.sh /usr/local/bin
 RUN chmod +x /usr/local/bin/docker-setup.sh
 
 # 使用启动脚本

@@ -3,7 +3,7 @@
 # 环境变量
 DOCKER_REGISTRY=${DOCKER_REGISTRY:-"localhost:5000"}
 IMAGE_NAME=${IMAGE_NAME:-"elijah-nestjs"}
-IMAGE_TAG=$(jq -r '.version' package.json)
+IMAGE_TAG=$(node -e 'console.log(require("./package.json").version)')
 
 if [ -z "$IMAGE_TAG" ]; then
   echo "Error: Could not read version from package.json"

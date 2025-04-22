@@ -26,7 +26,7 @@ export class AutoScaleDirective implements AfterViewInit {
   @Input() referenceHeight!: number;
   @Input() referenceWidth!: number;
   private target = this.elementRef.nativeElement;
-  private targetWrapper!: HTMLDivElement;
+  private targetWrapper?: HTMLDivElement;
 
   ngAfterViewInit() {
     this.updateScale();
@@ -47,20 +47,19 @@ export class AutoScaleDirective implements AfterViewInit {
       return;
     }
 
-    if (!this.targetWrapper) {
-      this.targetWrapper = document.createElement('div');
-      this.target.parentNode?.insertBefore(this.targetWrapper, this.target);
-      this.targetWrapper.appendChild(this.target);
-    }
-
     const resize$ = new ResizeObserver(() => {
       // 防止触发多次，也只需要触发一次
       resize$.disconnect();
 
       // 保证getBoundingClientRect计算准确
-      ['height', 'overflow', 'width'].forEach((item) => {
-        this.renderer2.removeStyle(this.targetWrapper, item);
-      });
+      if (this.targetWrapper) {
+        this.targetWrapper.parentNode?.insertBefore(
+          this.target,
+          this.targetWrapper,
+        );
+        this.targetWrapper.remove();
+        this.targetWrapper = undefined;
+      }
       ['height', 'transform', 'transformOrigin', 'width'].forEach((item) => {
         this.renderer2.removeStyle(this.target, item);
       });
@@ -86,6 +85,10 @@ export class AutoScaleDirective implements AfterViewInit {
         );
 
         // 解决宿主元素缩放后仍然占用空间的问题
+        this.targetWrapper = document.createElement('div');
+        this.target.parentNode?.insertBefore(this.targetWrapper, this.target);
+        this.targetWrapper.appendChild(this.target);
+
         this.renderer2.setStyle(
           this.targetWrapper,
           'height',

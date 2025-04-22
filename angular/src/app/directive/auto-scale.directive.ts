@@ -3,140 +3,98 @@ import {
   AfterViewInit,
   Directive,
   ElementRef,
-  Inject,
-  NgZone,
-  OnDestroy,
+  HostListener,
+  inject,
+  Input,
   PLATFORM_ID,
   Renderer2,
+  signal,
 } from '@angular/core';
-import { fromEvent, Subscription } from 'rxjs';
-import { debounceTime } from 'rxjs/operators';
-
-function debounce<T extends (...args: any[]) => void>(
-  func: T,
-  delay: number,
-): (...args: Parameters<T>) => void {
-  let timeoutId: ReturnType<typeof setTimeout> | null = null;
-
-  return function (...args: Parameters<T>): void {
-    if (timeoutId !== null) {
-      clearTimeout(timeoutId);
-    }
-
-    timeoutId = setTimeout(() => {
-      func(...args);
-    }, delay);
-  };
-}
 
 @Directive({
   selector: '[appAutoScale]',
   standalone: true,
 })
-export class AutoScaleDirective implements AfterViewInit, OnDestroy {
-  private isBrowser: boolean;
-  private lastScaleX!: number;
-  private lastScaleY!: number;
-  private mutationObserver!: MutationObserver;
-  private resizeSubscription!: Subscription;
+export class AutoScaleDirective implements AfterViewInit {
+  private elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
+  private platformId = inject(PLATFORM_ID);
+  private renderer2 = inject(Renderer2);
 
-  constructor(
-    private elementRef: ElementRef,
-    private ngZone: NgZone,
-    @Inject(PLATFORM_ID) private platformId: any,
-    private renderer2: Renderer2,
-  ) {
-    this.isBrowser = isPlatformBrowser(this.platformId);
-  }
+  private isBrowser = isPlatformBrowser(this.platformId);
+  private lastScaleX = signal(1);
+  private lastScaleY = signal(1);
+  @Input() referenceHeight!: number;
+  @Input() referenceWidth!: number;
+  private target = this.elementRef.nativeElement;
+  private targetWrapper!: HTMLDivElement;
 
   ngAfterViewInit() {
-    this.ngZone.runOutsideAngular(() => {
-      if (this.isBrowser) {
-        this.updateScale();
-
-        this.mutationObserver = new MutationObserver(
-          debounce(() => {
-            this.updateScale();
-          }, 100),
-        );
-
-        this.mutationObserver.observe(this.elementRef.nativeElement, {
-          childList: true,
-          attributes: true,
-          subtree: true,
-        });
-
-        this.resizeSubscription = fromEvent(window, 'resize')
-          .pipe(debounceTime(100))
-          .subscribe(() => {
-            this.updateScale();
-          });
-      }
-    });
+    this.updateScale();
   }
 
-  ngOnDestroy() {
-    if (this.mutationObserver) {
-      this.mutationObserver.disconnect();
-    }
-
-    if (this.resizeSubscription) {
-      this.resizeSubscription.unsubscribe();
-    }
+  @HostListener('window:resize')
+  onWindowResize() {
+    this.updateScale();
   }
 
   private updateScale() {
-    const sx = this.calcSx();
-    const sy = this.calcSy();
-
-    if (sx !== this.lastScaleX || sy !== this.lastScaleY) {
-      this.lastScaleX = sx;
-      this.lastScaleY = sy;
-
-      if (sx === 1 && sy === 1) {
-        this.renderer2.removeStyle(this.elementRef.nativeElement, 'transform');
-        this.renderer2.removeStyle(
-          this.elementRef.nativeElement,
-          'transformOrigin',
-        );
-        this.renderer2.removeStyle(this.elementRef.nativeElement, 'width');
-        this.renderer2.removeStyle(this.elementRef.nativeElement, 'height');
-      } else {
-        this.renderer2.setStyle(
-          this.elementRef.nativeElement,
-          'transform',
-          `scale(${sx},${sy})`,
-        );
-        this.renderer2.setStyle(
-          this.elementRef.nativeElement,
-          'transformOrigin',
-          'top left',
-        );
-        this.renderer2.setStyle(
-          this.elementRef.nativeElement,
-          'width',
-          window.innerWidth + 'px',
-        );
-        this.renderer2.setStyle(
-          this.elementRef.nativeElement,
-          'height',
-          window.innerHeight + 'px',
-        );
-      }
+    if (!this.referenceHeight || !this.referenceWidth) {
+      return;
     }
-  }
 
-  private calcSx(): number {
-    const hostWidth = this.elementRef.nativeElement.scrollWidth;
-    const viewportWidth = window.innerWidth;
+    // document、ResizeObserver依赖浏览器环境
+    if (!this.isBrowser) {
+      return;
+    }
 
-    return hostWidth > viewportWidth ? viewportWidth / hostWidth : 1;
-  }
+    if (!this.targetWrapper) {
+      this.targetWrapper = document.createElement('div');
+      this.target.parentNode?.insertBefore(this.targetWrapper, this.target);
+      this.targetWrapper.appendChild(this.target);
+    }
 
-  private calcSy(): number {
-    const hostHeight = this.elementRef.nativeElement.scrollHeight;
-    const viewportHeight = window.innerHeight;
+    const resize$ = new ResizeObserver(() => {
+      // 防止触发多次，也只需要触发一次
+      resize$.disconnect();
 
-    return hostHeight > viewportHeight ? viewportHeight / hostHeight : 1;
+      // 保证getBoundingClientRect计算准确
+      ['height', 'overflow', 'width'].forEach((item) => {
+        this.renderer2.removeStyle(this.targetWrapper, item);
+      });
+      ['height', 'transform', 'transformOrigin', 'width'].forEach((item) => {
+        this.renderer2.removeStyle(this.target, item);
+      });
+
+      const rect = this.target.getBoundingClientRect();
+      const sx = rect.width / this.referenceWidth;
+      const sy = rect.height / this.referenceHeight;
+      if (sx !== this.lastScaleX() || sy !== this.lastScaleY()) {
+        this.lastScaleX.set(sx);
+        this.lastScaleY.set(sy);
+
+        this.renderer2.setStyle(
+          this.target,
+          'height',
+          this.referenceHeight + 'px',
+        );
+        this.renderer2.setStyle(this.target, 'transform', `scale(${sx},${sy})`);
+        this.renderer2.setStyle(this.target, 'transformOrigin', 'top left');
+        this.renderer2.setStyle(
+          this.target,
+          'width',
+          this.referenceWidth + 'px',
+        );
+
+        // 解决宿主元素缩放后仍然占用空间的问题
+        this.renderer2.setStyle(
+          this.targetWrapper,
+          'height',
+          rect.height + 'px',
+        );
+        this.renderer2.setStyle(this.targetWrapper, 'overflow', 'hidden');
+        this.renderer2.setStyle(this.targetWrapper, 'width', rect.width + 'px');
+      }
+    });
+    resize$.observe(this.target);
   }
 }

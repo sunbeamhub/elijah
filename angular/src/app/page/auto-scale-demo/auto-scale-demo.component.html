@@ -1,4 +1,4 @@
-<div appAutoScale class="list">
+<div [referenceHeight]="1080 - 32" [referenceWidth]="1920 - 32" appAutoScale class="list">
   @for (item of list; track item) {
   <div class="list__item">{{ item }}</div>
   }

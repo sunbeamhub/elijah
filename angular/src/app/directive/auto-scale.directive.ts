@@ -5,7 +5,7 @@ import {
   ElementRef,
   HostListener,
   inject,
-  Input,
+  input,
   PLATFORM_ID,
   Renderer2,
   signal,
@@ -23,8 +23,9 @@ export class AutoScaleDirective implements AfterViewInit {
   private isBrowser = isPlatformBrowser(this.platformId);
   private lastScaleX = signal(1);
   private lastScaleY = signal(1);
-  @Input() referenceHeight!: number;
-  @Input() referenceWidth!: number;
+  referenceHeight = input<number | null>(null);
+  referenceWidth = input<number | null>(null);
+  scaleEffect = input<'both' | 'magnify' | 'shrink'>('both');
   private target = this.elementRef.nativeElement;
   private targetWrapper?: HTMLDivElement;
 
@@ -38,7 +39,11 @@ export class AutoScaleDirective implements AfterViewInit {
   }
 
   private updateScale() {
-    if (!this.referenceHeight || !this.referenceWidth) {
+    const refHeight = this.referenceHeight();
+    const refWidth = this.referenceWidth();
+
+    // 至少需要一个参数
+    if (!refHeight && !refWidth) {
       return;
     }
 
@@ -65,24 +70,30 @@ export class AutoScaleDirective implements AfterViewInit {
       });
 
       const rect = this.target.getBoundingClientRect();
-      const sx = rect.width / this.referenceWidth;
-      const sy = rect.height / this.referenceHeight;
-      if (sx !== this.lastScaleX() || sy !== this.lastScaleY()) {
+      const sx = refWidth ? rect.width / refWidth : 1;
+      const sy = refHeight ? rect.height / refHeight : 1;
+
+      const effect = this.scaleEffect();
+      const shouldApply =
+        effect === 'both' ||
+        (effect === 'magnify' && (sx > 1 || sy > 1)) ||
+        (effect === 'shrink' && (sx < 1 || sy < 1));
+
+      if (
+        shouldApply &&
+        (sx !== this.lastScaleX() || sy !== this.lastScaleY())
+      ) {
         this.lastScaleX.set(sx);
         this.lastScaleY.set(sy);
 
-        this.renderer2.setStyle(
-          this.target,
-          'height',
-          this.referenceHeight + 'px',
-        );
+        if (refHeight) {
+          this.renderer2.setStyle(this.target, 'height', refHeight + 'px');
+        }
         this.renderer2.setStyle(this.target, 'transform', `scale(${sx},${sy})`);
         this.renderer2.setStyle(this.target, 'transformOrigin', 'top left');
-        this.renderer2.setStyle(
-          this.target,
-          'width',
-          this.referenceWidth + 'px',
-        );
+        if (refWidth) {
+          this.renderer2.setStyle(this.target, 'width', refWidth + 'px');
+        }
 
         // 解决宿主元素缩放后仍然占用空间的问题
         this.targetWrapper = document.createElement('div');

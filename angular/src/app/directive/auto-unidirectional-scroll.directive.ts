@@ -6,8 +6,9 @@ import {
   HostBinding,
   HostListener,
   Inject,
-  Input,
+  input,
   OnDestroy,
+  output,
   PLATFORM_ID,
 } from '@angular/core';
 
@@ -20,21 +21,22 @@ export class AutoUnidirectionalScrollDirective
 {
   private intervalId?: number;
   private isBrowser: boolean;
-  @Input('scrollDirection') scrollDirection?: 'x' | 'y';
-  @Input('scrollInterval') scrollInterval = 10;
+  scrollDirection = input<'x' | 'y'>();
+  scrolling = output();
+  scrollInterval = input(10);
 
   @HostBinding('style.overflowX') get styleOverflowX() {
-    return this.scrollDirection === 'x'
+    return this.scrollDirection() === 'x'
       ? 'auto'
-      : this.scrollDirection === 'y'
+      : this.scrollDirection() === 'y'
         ? 'hidden'
         : 'visible';
   }
 
   @HostBinding('style.overflowY') get styleOverflowY() {
-    return this.scrollDirection === 'y'
+    return this.scrollDirection() === 'y'
       ? 'auto'
-      : this.scrollDirection === 'x'
+      : this.scrollDirection() === 'x'
         ? 'hidden'
         : 'visible';
   }
@@ -71,7 +73,7 @@ export class AutoUnidirectionalScrollDirective
 
     this.stopAutoScroll();
 
-    if ('x' === this.scrollDirection) {
+    if ('x' === this.scrollDirection()) {
       this.intervalId = window.setInterval(() => {
         const { scrollLeft, scrollWidth, clientWidth } =
           this.elementRef.nativeElement;
@@ -79,11 +81,12 @@ export class AutoUnidirectionalScrollDirective
           this.elementRef.nativeElement.scrollLeft = 0;
         } else {
           this.elementRef.nativeElement.scrollLeft += 1;
+          this.scrolling.emit();
         }
-      }, this.scrollInterval);
+      }, this.scrollInterval());
     }
 
-    if ('y' === this.scrollDirection) {
+    if ('y' === this.scrollDirection()) {
       this.intervalId = window.setInterval(() => {
         const { scrollTop, scrollHeight, clientHeight } =
           this.elementRef.nativeElement;
@@ -91,8 +94,9 @@ export class AutoUnidirectionalScrollDirective
           this.elementRef.nativeElement.scrollTop = 0;
         } else {
           this.elementRef.nativeElement.scrollTop += 1;
+          this.scrolling.emit();
         }
-      }, this.scrollInterval);
+      }, this.scrollInterval());
     }
   }
 

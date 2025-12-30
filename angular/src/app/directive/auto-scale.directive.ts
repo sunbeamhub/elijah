@@ -8,7 +8,6 @@ import {
   input,
   PLATFORM_ID,
   Renderer2,
-  signal,
 } from '@angular/core';
 
 @Directive({
@@ -21,8 +20,6 @@ export class AutoScaleDirective implements AfterViewInit {
   private renderer2 = inject(Renderer2);
 
   private isBrowser = isPlatformBrowser(this.platformId);
-  private lastScaleX = signal(1);
-  private lastScaleY = signal(1);
   referenceHeight = input<number | null>(null);
   referenceWidth = input<number | null>(null);
   scaleEffect = input<'both' | 'magnify' | 'shrink'>('both');
@@ -73,41 +70,33 @@ export class AutoScaleDirective implements AfterViewInit {
       const sx = refWidth ? rect.width / refWidth : 1;
       const sy = refHeight ? rect.height / refHeight : 1;
 
-      const effect = this.scaleEffect();
+      const scaleEffect = this.scaleEffect();
       const shouldApply =
-        effect === 'both' ||
-        (effect === 'magnify' && (sx > 1 || sy > 1)) ||
-        (effect === 'shrink' && (sx < 1 || sy < 1));
+        scaleEffect === 'both' ||
+        (scaleEffect === 'magnify' && (sx > 1 || sy > 1)) ||
+        (scaleEffect === 'shrink' && (sx < 1 || sy < 1));
 
-      if (
-        shouldApply &&
-        (sx !== this.lastScaleX() || sy !== this.lastScaleY())
-      ) {
-        this.lastScaleX.set(sx);
-        this.lastScaleY.set(sy);
-
-        if (refHeight) {
-          this.renderer2.setStyle(this.target, 'height', refHeight + 'px');
-        }
-        this.renderer2.setStyle(this.target, 'transform', `scale(${sx},${sy})`);
-        this.renderer2.setStyle(this.target, 'transformOrigin', 'top left');
-        if (refWidth) {
-          this.renderer2.setStyle(this.target, 'width', refWidth + 'px');
-        }
-
-        // 解决宿主元素缩放后仍然占用空间的问题
-        this.targetWrapper = document.createElement('div');
-        this.target.parentNode?.insertBefore(this.targetWrapper, this.target);
-        this.targetWrapper.appendChild(this.target);
-
-        this.renderer2.setStyle(
-          this.targetWrapper,
-          'height',
-          rect.height + 'px',
-        );
-        this.renderer2.setStyle(this.targetWrapper, 'overflow', 'hidden');
-        this.renderer2.setStyle(this.targetWrapper, 'width', rect.width + 'px');
+      if (!shouldApply) {
+        return;
       }
+
+      if (refHeight) {
+        this.renderer2.setStyle(this.target, 'height', refHeight + 'px');
+      }
+      this.renderer2.setStyle(this.target, 'transform', `scale(${sx},${sy})`);
+      this.renderer2.setStyle(this.target, 'transformOrigin', 'top left');
+      if (refWidth) {
+        this.renderer2.setStyle(this.target, 'width', refWidth + 'px');
+      }
+
+      // 解决宿主元素缩放后仍然占用空间的问题
+      this.targetWrapper = document.createElement('div');
+      this.target.parentNode?.insertBefore(this.targetWrapper, this.target);
+      this.targetWrapper.appendChild(this.target);
+
+      this.renderer2.setStyle(this.targetWrapper, 'height', rect.height + 'px');
+      this.renderer2.setStyle(this.targetWrapper, 'overflow', 'hidden');
+      this.renderer2.setStyle(this.targetWrapper, 'width', rect.width + 'px');
     });
     resize$.observe(this.target);
   }

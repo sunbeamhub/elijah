@@ -1,6 +1,6 @@
-@if (list.length > 0) {
-<div appAutoUnidirectionalScroll class="list" scrollDirection="y">
-  @for (item of list; track item) {
+@if (list().length > 0) {
+<div (scrolling)="handleScrolling($event)" appAutoUnidirectionalScroll class="list" scrollDirection="y">
+  @for (item of list(); track item) {
   <div class="list__item">{{ item }}</div>
   }
 </div>

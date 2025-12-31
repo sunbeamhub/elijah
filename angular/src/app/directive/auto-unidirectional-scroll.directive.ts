@@ -11,6 +11,17 @@ import {
   output,
   PLATFORM_ID,
 } from '@angular/core';
+import { getChildrenHeightSum, getChildrenWidthSum } from '@app/utils/dom';
+
+export interface IScrollPosition {
+  clientHeight?: number;
+  clientWidth?: number;
+  needScroll: boolean;
+  scrollLeft?: number;
+  scrollHeight?: number;
+  scrollTop?: number;
+  scrollWidth?: number;
+}
 
 @Directive({
   selector: '[appAutoUnidirectionalScroll]',
@@ -22,7 +33,7 @@ export class AutoUnidirectionalScrollDirective
   private intervalId?: number;
   private isBrowser: boolean;
   scrollDirection = input<'x' | 'y'>();
-  scrolling = output();
+  scrolling = output<IScrollPosition>();
   scrollInterval = input(10);
 
   @HostBinding('style.overflowX') get styleOverflowX() {
@@ -77,12 +88,19 @@ export class AutoUnidirectionalScrollDirective
       this.intervalId = window.setInterval(() => {
         const { scrollLeft, scrollWidth, clientWidth } =
           this.elementRef.nativeElement;
+        const needScroll =
+          getChildrenWidthSum(this.elementRef.nativeElement) > clientWidth;
         if (scrollLeft + clientWidth >= scrollWidth) {
           this.elementRef.nativeElement.scrollLeft = 0;
         } else {
           this.elementRef.nativeElement.scrollLeft += 1;
-          this.scrolling.emit();
         }
+        this.scrolling.emit({
+          clientWidth,
+          needScroll,
+          scrollLeft,
+          scrollWidth,
+        });
       }, this.scrollInterval());
     }
 
@@ -90,12 +108,19 @@ export class AutoUnidirectionalScrollDirective
       this.intervalId = window.setInterval(() => {
         const { scrollTop, scrollHeight, clientHeight } =
           this.elementRef.nativeElement;
+        const needScroll =
+          getChildrenHeightSum(this.elementRef.nativeElement) > clientHeight;
         if (scrollTop + clientHeight >= scrollHeight) {
           this.elementRef.nativeElement.scrollTop = 0;
         } else {
           this.elementRef.nativeElement.scrollTop += 1;
-          this.scrolling.emit();
         }
+        this.scrolling.emit({
+          clientHeight,
+          needScroll,
+          scrollHeight,
+          scrollTop,
+        });
       }, this.scrollInterval());
     }
   }

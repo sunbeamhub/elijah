@@ -1,6 +1,6 @@
 .list {
   background: rgba(0, 0, 0, 0.3);
-  height: 800px;
+  height: calc(100vh - 32px);
   margin: 0 auto;
   padding: 0 20px;
   width: 600px;
